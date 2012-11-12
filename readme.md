@@ -50,7 +50,7 @@ Which means that environment variables take precedence over the Git configuratio
 
 ### Enrivonment variables
 
-Export your configuration option through GIT_JIRA_**\<OPTION NAME IN UPPER CASE WITH UNDERSCORES\>**
+Export your configuration option through GIT_JIRA_ **\<OPTION NAME IN UPPER CASE WITH UNDERSCORES\>**
 
 ### Git
 
