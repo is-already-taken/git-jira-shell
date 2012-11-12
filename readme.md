@@ -42,15 +42,15 @@ Which means that environment variables take precedence over the Git configuratio
 
 ### Options
 
-* *FIREFOX_PROFILE*	The absolute path to your Firefox profile directory 
-* *CROWD_PATH*		The crow path (used for cookie examination) (usually /)
-* *JIRA_URL*		The JIRA URL (e.g. http://project.acme.com/jira)
-* *CURL_OPTS*		Optionally: additional curl options (some options will be overrided)
-* *COOKIE_PROVIDER*	The authentication provider (for now, there's only "firefox") 
+* **FIREFOX_PROFILE**	The absolute path to your Firefox profile directory 
+* **CROWD_PATH**	The crow path (used for cookie examination) (usually /)
+* **JIRA_URL**		The JIRA URL (e.g. http://project.acme.com/jira)
+* **CURL_OPTS**		Optionally: additional curl options (some options will be overrided)
+* **COOKIE_PROVIDER**	The authentication provider (for now, there's only "firefox") 
 
 ### Enrivonment variables
 
-Export your configuration option through GIT_JIRA_*<OPTION NAME IN UPPER CASE WITH UNDERSCORES>*
+Export your configuration option through GIT_JIRA_**\<OPTION NAME IN UPPER CASE WITH UNDERSCORES\>**
 
 ### Git
 
@@ -62,7 +62,7 @@ $ git config --local "git-jira.*<option name in lower case with hyphens>*" "<VAL
 
 ```
 [git-jira]
-	*<option name in lower case with hyphens>* = <VALUE>
+	**<option name in lower case with hyphens>** = <VALUE>
 ``` 
 
 ### Configuration file
