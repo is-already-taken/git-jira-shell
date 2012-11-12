@@ -1,0 +1,123 @@
+#!/bin/sh
+#
+# Decorate prepared Git commit message with JIRA issue key and summary if 
+# the git-jira toolsuite exists and the current branch's name provides 
+# a issue key to look for the summary in JIRA
+#
+# Author Thomas Lehmann (thomas.lehmann@stueckseln.de) 2012
+#
+#
+# TODO
+# - handle commit type "amend" (see preparing parameters), "merge" and "squash" ($2)
+# - improve project's issue key name matching by allowing the configuration 
+#   option to contain a regualr expression
+# - implement searching issues by JQL
+
+
+# Used configuration or enviroment variables:
+# - JIRA_PROJECT_NAME
+
+
+# Detect git-jira toolsuite 
+#
+if which get-jira-issues.sh >/dev/null 2>&1; then
+	GET_JIRA_ISSUES_BIN="`which get-jira-issues.sh`"
+	GIT_JIRA_TOOLS_DIRECTORY="$( dirname `readlink -f ${GET_JIRA_ISSUES_BIN}` )"
+fi
+
+
+UTILS_INCLUDED=0
+
+# Test for git-jira tools' utils (necessary to cascading get configuration)
+#
+if [ -f "${GIT_JIRA_TOOLS_DIRECTORY}/utils.inc.sh" ]; then
+	. ${GIT_JIRA_TOOLS_DIRECTORY}/utils.inc.sh
+	UTILS_INCLUDED=1
+fi
+
+
+# Prepare parameters
+#
+# #1 - message file
+# #2 - type of commit (commit,merge,squash)
+# #3 - treeish (HEAD)
+#
+# amend or reword are represented by "commmit" and "HEAD"
+
+MSG_FILE="${1}"
+MSG_TMP_FILE="${MSG_FILE}.tmp"
+
+COMMIT_TYPE="${2}"
+TREEISH="${3}"
+
+
+# Ignore amend/reword
+#
+if [ ${COMMIT_TYPE} == "commit" ] && [ ${TREEISH} == "HEAD" ]; then
+	# ++++ DEBUG ++++
+	echo "DEBUG: amend/reword ignored"
+	exit 0
+fi
+
+# Ignore squash and merge commits: proceed with default file
+#
+if [ "${COMMIT_TYPE}" == "merge" ] || [ "${COMMIT_TYPE}" == "squash" ]; then
+	# ++++ DEBUG ++++
+	echo "DEBUG: squash/merge ignored"
+	exit 0
+fi
+
+
+
+# Try to load configuration from git-jira configuration
+#
+_PROJECT_NAME="`getConfig "JIRA_PROJECT_NAME"`"
+
+if [ $? -ne 0 ]; then
+	echo "JIRA_PROJECT_NAME not configured through environment variable, Git config or configuration file."
+fi
+
+
+# Get current branch name (filter for non detached head)
+#
+BRANCH_NAME="`git branch --contains HEAD | grep "^\* " | | grep -v '* ([^)]*)' | sed 's+^\* ++'`"
+
+# Test if a JIRA project name is specified
+#
+if [ ! -z "${_PROJECT_NAME}" ] && [ -e "${GET_JIRA_ISSUES_BIN}" ]; then
+	ISSUE_KEY=`echo "${BRANCH_NAME}" | grep "${_PROJECT_NAME}" | sed "s+^.*\(${_PROJECT_NAME}-[0-9]\{1,6\}\).*$+\1+"`
+
+	# Check if the script is defined
+	#
+	if [ ! -z "${ISSUE_KEY}" ]; then
+		echo "Retrieving issue information for the issue '${ISSUE_KEY}' ..."
+		ISSUE_SUMMARY="`${GET_JIRA_ISSUES_BIN} "${ISSUE_KEY}"`"
+	else
+		echo "JIRA issue key could not be established from current branch's name '${BRANCH_NAME}'"
+	fi
+else 
+	echo "Branch '${BRANCH_NAME} not matched against project name '${_PROJECT_NAME}'"
+fi
+
+# Backup commit message file
+#
+mv ${MSG_FILE} ${MSG_TMP_FILE}
+
+# Append customized commit message
+#
+if [ ! -z "${ISSUE_SUMMARY}" ]; then
+	echo "# ${ISSUE_KEY} ${ISSUE_SUMMARY}" >>${MSG_FILE}
+fi
+
+# Add empty newline
+#
+echo "" >>${MSG_FILE}
+
+# Append Git's prepared commit message
+#
+cat ${MSG_TMP_FILE} | grep -v "^$" >> ${MSG_FILE}
+
+# Remove temporary Git commit message file
+#
+[ -f "${MSG_TMP_FILE}" ] && rm ${MSG_TMP_FILE}
+
